@@ -1,0 +1,228 @@
+load("TreePlacementAlgorithm.js")
+
+function readFile(filePath) {
+    const file = new java.io.File(filePath);
+    const reader = new java.io.BufferedReader(new java.io.FileReader(file));
+    let line, content = "";
+    
+    while ((line = reader.readLine()) !== null) {
+        content += line + "\n";
+    }
+    reader.close();
+    return content;
+}
+
+function extractNamesFromFile(fileContent) {
+    const lines = fileContent.split("\n"); // Split the file content into lines
+    const names = [];
+
+    // Iterate over each line
+    lines.forEach(line => {
+        // Trim whitespace and skip empty lines
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+            names.push(trimmedLine); // Add the line to the list of names
+        }
+    });
+
+    return names;
+}
+
+class Node {
+    constructor(name, parent) {
+        this.name = name;
+        this.children = [];
+        this.parent = parent;
+        this.X = -1;
+        this.Y = 0;
+        this.Mod = 0;
+        this.Height = 0;
+        this.Width = 0;
+    }
+    addChild(child) {
+        this.children.push(child);
+    }
+    isLeaf() {
+        return this.children.length === 0;
+    }
+    isLeftMost() {
+        if (this.parent === null) {
+            return true;
+        }
+        return this.parent.children[0] === this;
+    }
+    isRightMost() {
+        if (this.parent === null) {
+            return true;
+        }
+        return this.parent.children[this.parent.children.length - 1] === this;
+    }
+    getPreviousSibling() {
+        if (this.parent === null || this.isLeftMost()) {
+            return null;
+        }
+        return this.parent.children[this.parent.children.indexOf(this) - 1];
+    }
+    getNextSibling() {
+        if (this.parent === null || this.isRightMost()) {
+            return null;
+        }
+        return this.parent.children[this.parent.children.indexOf(this) + 1];
+    }
+    getLeftMostSibling() {
+        if (this.parent === null) {
+            return this;
+        }
+        if (this.isLeftMost()) {
+            return this;
+        }
+        return this.parent.children[0];
+    }
+    getLeftMostChild() {
+        if (this.isLeaf()) {
+            return null;
+        }
+        return this.children[0];
+    }
+    getRightMostChild() {
+        if (this.isLeaf()) {
+            return null;
+        }
+        return this.children[this.children.length - 1];
+    }
+}
+
+function calculateDepth(node) {
+    if (node.name == "root") {
+        node.Y = -1;
+    }
+    node.children.forEach(child => {
+        child.Y = node.Y + 1;
+        calculateDepth(child);
+    });
+}
+
+function getHierarchy(selectedRelationships, organizationUnits) {
+
+    var count = 0;
+
+    var relationships = $("composition-relationship");
+    var elements = $("element");
+
+    var rootNode = new Node("root", null);
+    var nodes = [rootNode];
+
+    //Iterate through all elements to find all elements without parents
+    elements.forEach(element => {
+        if (organizationUnits.includes(element.name)) {
+            var relsCoontainingEl = relationships.filter(function(rel){return rel.target.name === element.name})
+            if (relsCoontainingEl.length === 0) {
+                count++;
+                var node = new Node(element.name, null);
+                nodes.push(node);
+                rootNode.addChild(node);
+            }
+        }
+    });
+
+    // Iterate through all relationships in the model to build the hierarchy
+    relationships.forEach(rel => {
+        if (rel.type === "composition-relationship") {
+            const parent = rel.source;
+            const child = rel.target;
+
+            if (organizationUnits.includes(parent.name) && organizationUnits.includes(child.name)) {
+                var parentNode = nodes.find(function(node) {return node.name === parent.name});
+                var childNode = nodes.find(function(node) {return node.name === child.name});
+                selectedRelationships.push(rel);
+
+                if (parentNode === undefined) {
+                    count++;
+                    parentNode = new Node(parent.name, null);
+                    nodes.push(parentNode);
+                }
+                if (childNode === undefined) {
+                    count++;
+                    childNode = new Node(child.name, parentNode);
+                    nodes.push(childNode);
+                } else {
+                    childNode.parent = parentNode;
+                }
+
+                parentNode.addChild(childNode);
+            }
+        }
+    });
+    console.log("A " + count);
+    return rootNode;
+}
+
+function drawElements(node, view, xDistance, yDistance, selectedElements) {
+    if (node.name !== "root") {
+        var element = $("business-actor").filter(function(el) {return el.name === node.name})[0];
+        var component = view.add(element, node.X * xDistance, node.Y * yDistance, -1, -1);
+        if (!selectedElements.includes(component)) {
+            selectedElements.push(component);
+        }
+    }
+    node.children.forEach(child => {
+        drawElements(child, view, xDistance, yDistance, selectedElements);
+    });
+}
+
+function drawRelations(selectedRelationships, selectedElements, view) {
+    selectedRelationships.forEach(rel => {
+        var relSource = selectedElements.filter(function(el) {return el.name === rel.source.name});
+        var relTarget = selectedElements.filter(function(el) {return el.name === rel.target.name});
+        if (relSource.length > 0 && relSource.length > 0)
+            view.add(rel, relSource[0], relTarget[0]);
+    });
+}
+
+function drawIsolatedElements(isolatedElements, xDistance, yDistance, elementsPerRow, folder) {
+    var view = model.createArchimateView("Isolated Elements", folder);
+    console.log(isolatedElements[0]);
+    for (var i = 0; i < isolatedElements.length; i++) {
+        view.add(getElementFromName(isolatedElements[i].name), (i % elementsPerRow) * xDistance, Math.floor(i / elementsPerRow) * yDistance, -1, -1);
+    }
+}
+
+function drawViewPerTree(rootNode, folderName, selectedRelationships){
+    var isolatedElements = [];
+    var VFolder = $("folder.Views").first(); // Find folder called "Views" 
+    var folder = VFolder.createFolder(folderName); // Create a sub-folder
+    rootNode.children.forEach(child => {
+        if (child.children.length === 0) {
+            isolatedElements.push(child);
+        } else {
+            var selectedElements = [];
+            var view = model.createArchimateView(child.name, folder);
+            drawElements(child, view, 150, 120, selectedElements);
+            drawRelations(selectedRelationships, selectedElements, view);
+        }
+    });
+    if (isolatedElements.length > 0)
+        drawIsolatedElements(isolatedElements, 150, 120, 8, folder);
+
+}
+
+function getElementFromName(nodeName) {
+    return $("element").filter(function(el) {return el.name === nodeName})[0];
+}
+
+var organizationUnits = extractNamesFromFile(readFile("C:/Users/GCarmo/Documents/Archi/DataSources/units.tsv"));
+
+var selectedRelationships = [];
+var selectedElements = [];
+var coll = getHierarchy(selectedRelationships, organizationUnits);
+
+console.log("B "+organizationUnits.length);
+calculateDepth(coll);
+
+var treeCalculator = new DrawTree();
+treeCalculator.calculateIndividualPositions(coll);
+drawViewPerTree(coll, "Organization Views", selectedRelationships);
+//var view = $("archimate-diagram-model")[0];
+
+//drawElements(coll, view, 150, 120, selectedElements);
+//drawRelations(selectedRelationships, selectedElements, view);

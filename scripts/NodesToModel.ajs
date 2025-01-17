@@ -1,0 +1,123 @@
+﻿/*
+ * New Archi Script
+ */
+/*
+try {
+    const pythonScriptPath = "/home/carmo/Documents/Archi/scripts/actorParse.py";
+    const command = `/usr/bin/python "${pythonScriptPath}"`;
+    
+    const result = exec(command);
+    console.log("Python script executed successfully.");
+
+    pythonScriptPath = "C:\Users\GCarmo\Documents\Archi\scripts\Jsons\coordinatorParse.py";
+
+    result = exec(command);
+    console.log("Python script executed successfully.");
+
+    pythonScriptPath = "C:\Users\GCarmo\Documents\Archi\scripts\Jsons\nodes_to_actors.py";
+
+    result = exec(command);
+    console.log("Python script executed successfully.");
+
+} catch (error) {
+    console.log("Error executing Python script:", error);
+}
+*/
+// Step 2: Define paths to JSON files
+const actorsFilePath = "C:/Users/GCarmo/Documents/Archi/scripts/Jsons/nodes.json";
+const relationsFilePath = "C:/Users/GCarmo/Documents/Archi/scripts/Jsons/relations.json";
+
+// Step 3: Read JSON files
+function readFile(filePath) {
+    const file = new java.io.File(filePath);
+    const reader = new java.io.BufferedReader(new java.io.FileReader(file));
+    let line, content = "";
+    
+    while ((line = reader.readLine()) !== null) {
+        content += line + "\n";
+    }
+    reader.close();
+    return content;
+}
+
+let actors = [];
+let relations = [];
+
+try {
+    // Read actors.json
+    const actorsData = readFile(actorsFilePath);
+    actors = JSON.parse(actorsData);
+    console.log("Actors loaded successfully.");
+} catch (error) {
+    console.log("Error reading actors.json:", error);
+}
+
+try {
+    // Read relations.json
+    const relationsData = readFile(relationsFilePath);
+    relations = JSON.parse(relationsData);
+    console.log("Relations loaded successfully.");
+} catch (error) {
+    console.log("Error reading relations.json:", error);
+}
+
+
+// Step 4: Create Business Actors in ArchiMate
+
+const businessActorsMap = {};  // Map to store created actors for lookup
+
+for(let k in actors) {
+    const actorName = actors[k].name;
+    const actorType = actors[k].type;
+    const properties = actors[k].properties;
+
+    var actorElement = model.createElement(actorType, actorName);  // Create Business Actor
+    
+    properties.forEach(property => {
+        actorElement.prop(property.name, property.value, true)
+    })
+
+    businessActorsMap[actorName] = actorElement;
+    console.log(`Created Element: ${actorName}`);
+};
+
+// Step 5: Create Composition Relations between the actors
+
+const app_interfaces = $("application-interface");
+const app_services = $("application-service");
+
+relations.forEach(relation => {
+    const parentActor = businessActorsMap[relation.parent];
+    const childActor = businessActorsMap[relation.child];
+    const relationType = relation.relation;
+    var listInterfaceChild = app_interfaces.filter(function(o) {return o.name == relation.child});
+    var listInterfaceParent = app_interfaces.filter(function(o) {return o.name == relation.parent});
+    var listService = app_services.filter(function(o) {return o.name == relation.child});
+    console.log(listInterfaceChild);
+    console.log(listInterfaceParent);
+
+    if (parentActor && childActor) {
+        if (listInterfaceChild.length > 0 && listInterfaceParent.length == 0) {
+            var compositionRelationship = model.createRelationship(relationType, "", parentActor, listInterfaceChild[0]);
+            console.log(`Created Composition Relationship: ${relation.parent} -> ${relation.child}`);
+        } else if (listInterfaceParent.length > 0) {
+            if (listService.length > 0) {
+                var compositionRelationship = model.createRelationship(relationType, "", listInterfaceParent[0], listService[0]);
+                console.log(`Created Composition Relationship: ${relation.parent} -> ${relation.child}`);
+            } else {
+                console.log(`Could not create relationship: ${relation.parent} -> ${relation.child}`);
+            }
+        } else{
+            var compositionRelationship = model.createRelationship(relationType, "", parentActor, childActor);
+            console.log(`Created Composition Relationship: ${relation.parent} -> ${relation.child}`);
+        }
+    } else {
+        console.log(`Could not create relationship: ${relation.parent} -> ${relation.child}`);
+    }
+
+    listInterfaceChild = [];
+    listInterfaceParent = [];
+    listService = [];
+});
+
+console.log("Process complete.");
