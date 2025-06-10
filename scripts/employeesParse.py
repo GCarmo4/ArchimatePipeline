@@ -26,29 +26,52 @@ def extractColumns(df):
     column2 = df['Centro cst']
     column3 = df['Cargo']
     column4 = df['Subárea de recursos humanos']
-    return column1, column2, column3, column4
+    column5 = df['ID de sistema']
+    column6 = df['ÁrRH']
+    column7 = df['Área de recursos humanos']
+    column8 = df['Subárea']
+    column9 = df['Subárea de recursos humanos']
+    column10 = df['Grupo de empregados']
+    column11 = df['Subgrupo de empregados']
+    column12 = df['Área de processamento da folha']
+    column14 = df['Centro de custo']
+
+    return column1, column2, column3, column4, column5, column6, column7, column8, column9, column10, column11, column12, column14
 
 def main():
     unit_found_flag = False
     nodes = readCurrentNodes()
     relations = readCurrentRelations()
-    excel_file = openExcelFile('../DataSources/it01_22out2024.xlsx')
-    nomes, centro_de_custo, cargos, area = extractColumns(excel_file)
+    excel_file = openExcelFile('../DataSources/it01_activos_10jan2025.xlsx')
+    nomes, centro_de_custo, cargos, area, istid, arRH, area_rh, subarea, subarea_rh, grupo_empregados, subgrupo_empregados, area_folha, centro_custo_nome = extractColumns(excel_file)
 
     for i in range(len(nomes)):
-        if nomes[i] not in nodes and cargos[i] != '':
-            node_actor = Node(nomes[i], "business-actor")
-            node_actor.add_properties("istID", "TODO")
-            nodes[nomes[i]] = node_actor.to_dict()
+        
+        node_actor = Node(nomes[i], "business-actor")
+
+        node_actor.add_properties("istID", istid[i].lower())
+        node_actor.add_properties("type", "employee")
+        node_actor.add_properties("Centro cst", centro_de_custo[i])
+        node_actor.add_properties("Cargo", cargos[i])
+        node_actor.add_properties("ÁrRH", arRH[i])
+        node_actor.add_properties("Área de recursos humanos", area_rh[i])
+        node_actor.add_properties("Subárea", subarea[i])
+        node_actor.add_properties("Subárea de recursos humanos", subarea_rh[i])
+        node_actor.add_properties("Grupo de empregados", grupo_empregados[i])
+        node_actor.add_properties("Subgrupo de empregados", subgrupo_empregados[i])
+        node_actor.add_properties("Área de processamento da folha", area_folha[i])
+        node_actor.add_properties("Centro de custo", centro_custo_nome[i])
+
+        nodes[nomes[i]+":business-actor"] = node_actor.to_dict()
 
         for node_name in nodes:
             for prop in nodes[node_name]["properties"]:
-                print(prop["name"] == "centro de custo")
-                print(prop["value"])
-                print(centro_de_custo[i][2:])
+                #print(prop["name"] == "centro de custo")
+                #print(prop["value"])
+                #print(centro_de_custo[i][2:])
                 if prop["name"] == "centro de custo" and prop["value"] == centro_de_custo[i][2:]:
-                    print(centro_de_custo[i][2:])
-                    unidade = node_name
+                    #print(centro_de_custo[i][2:])
+                    unidade = node_name.split(":")[0]
                     role_name = cargos[i] + " - " + area[i]
                     node_role = Node(role_name, "business-role")
                     nodes[role_name] = node_role.to_dict()

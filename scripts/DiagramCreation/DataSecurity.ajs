@@ -1,0 +1,85 @@
+class Node {
+    constructor(name) {
+        this.name = name;
+        this.X = -1;
+        this.Y = 0;
+    }
+}
+
+function getBObjects() {
+    var objects = [];
+    business_objects = $("business-object");
+    business_objects.forEach(function(obj) {
+        var node = new Node(obj.name);
+        node.Y = 2;
+        objects.push(node);
+    });
+    return objects;
+}
+
+function getActors(object, selected_relationships) {
+
+    var actors = [];
+    var object_relationships = $("access-relationship").filter(function(rel) {
+        return rel.target.name === object.name && rel.source.type === "business-actor";
+    });
+
+    object_relationships.forEach(function(rel) {
+        selected_relationships.push(rel);
+        actors.push(new Node(rel.source.name));
+    });
+
+    return actors;
+}
+
+function calculateX(object, actors) {
+    var X = 0;
+    actors.forEach(function(actors) {
+        actors.X = X;
+        actors.Y = 1;
+        X++;
+    });
+
+    object.X = (actors[actors.length - 1].X + actors[0].X) / 2;
+    object.Y = 0;
+}
+
+function drawDiagram(object, actors, selected_relationships, xDistance, yDistance, view) {
+
+    var object_object = $("business-object").filter(function(el) {return el.name === object.name})[0];
+    var object_element = view.add(object_object, object.X*xDistance, object.Y*yDistance, -1, -1);
+
+    actors.forEach(function(actor) {
+        var actor_object = $("business-actor").filter(function(el) {return el.name === actor.name})[0];
+        var actor_element = view.add(actor_object, actor.X*xDistance, actor.Y*yDistance, -1, -1);
+        relation = selected_relationships.filter(function(rel) {
+            return (rel.target.name === object.name) && (rel.source.name === actor.name);
+        })[0];
+        view.add(relation, actor_element, object_element);
+    });
+}
+
+function drawViewPerObject(objects, folderName) {
+    var xDistance = 150;
+    var yDistance = 120;
+    var selected_relationships = [];
+
+    var VFolder = $("folder.Views").first(); // Find folder called "Views" 
+    var folder = VFolder.createFolder(folderName); // Create a sub-folder
+
+    objects.forEach(function(obj) {
+        var actors = getActors(obj, selected_relationships);
+        if (actors.length != 0) {
+            calculateX(obj, actors);
+            var view = model.createArchimateView(obj.name, folder);
+            drawDiagram(obj, actors, selected_relationships, xDistance, yDistance, view);
+        }
+    });
+}
+
+function drawDataSecurityDiagram() {
+    var objects = getBObjects();
+    drawViewPerObject(objects, "Data Security Diagrams");
+}
+
+drawDataSecurityDiagram();

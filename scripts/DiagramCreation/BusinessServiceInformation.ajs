@@ -1,0 +1,85 @@
+class Node {
+    constructor(name) {
+        this.name = name;
+        this.X = -1;
+        this.Y = 0;
+    }
+}
+
+function getProcesses() {
+    var processes = [];
+    business_processes = $("business-process");
+    business_processes.forEach(function(process) {
+        var node = new Node(process.name);
+        node.Y = 2;
+        processes.push(node);
+    });
+    return processes;
+}
+
+function getObjects(process, selected_relationships) {
+
+    var objects = [];
+    var object_relationships = $("access-relationship").filter(function(rel) {
+        return rel.source.name === process.name && rel.target.type === "business-object";
+    });
+
+    object_relationships.forEach(function(rel) {
+        selected_relationships.push(rel);
+        objects.push(new Node(rel.target.name));
+    });
+
+    return objects;
+}
+
+function calculateX(process, objects) {
+    var X = 0;
+    objects.forEach(function(object) {
+        object.X = X;
+        object.Y = 1;
+        X++;
+    });
+
+    process.X = (objects[objects.length - 1].X + objects[0].X) / 2;
+    process.Y = 0;
+}
+
+function drawDiagram(process, objects, selected_relationships, xDistance, yDistance, view) {
+
+    var process_object = $("business-process").filter(function(el) {return el.name === process.name})[0];
+    var process_element = view.add(process_object, process.X*xDistance, process.Y*yDistance, -1, -1);
+
+    objects.forEach(function(object) {
+        var object_object = $("business-object").filter(function(el) {return el.name === object.name})[0];
+        var object_element = view.add(object_object, object.X*xDistance, object.Y*yDistance, -1, -1);
+        relation = selected_relationships.filter(function(rel) {
+            return (rel.source.name === process.name) && (rel.target.name === object.name);
+        })[0];
+        view.add(relation, process_element, object_element);
+    });
+}
+
+function drawViewPerProcess(processes, folderName) {
+    var xDistance = 150;
+    var yDistance = 120;
+    var selected_relationships = [];
+
+    var VFolder = $("folder.Views").first(); // Find folder called "Views" 
+    var folder = VFolder.createFolder(folderName); // Create a sub-folder
+
+    processes.forEach(function(process) {
+        var objects = getObjects(process, selected_relationships);
+        if (objects.length != 0) {
+            calculateX(process, objects);
+            var view = model.createArchimateView(process.name, folder);
+            drawDiagram(process, objects, selected_relationships, xDistance, yDistance, view);
+        }
+    });
+}
+
+function drawBusinessServiceInformationDiagram() {
+    var processes = getProcesses();
+    drawViewPerProcess(processes, "Business Service/Information Diagrams");
+}
+
+drawBusinessServiceInformationDiagram();

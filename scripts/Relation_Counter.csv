@@ -1,0 +1,30 @@
+Relationship Type, Source, Target, Count
+"Composition Relationships","Business Actor","Business Actor",265,
+"Assignment Relationships","Business Actor","Business Role",133,
+"Assignment Relationships","Business Role","Business Process",56,
+"Composition Relationships","Business Process","Business Process",12,
+"Access Relationships","Business Process","Business Object",57,
+"Serving Relationships","Application Component","Business Process",32,
+"Composition Relationships","Application Component","Application Interface",36,
+"Assignment Relationships","Application Interface","Application Service",36,
+"Access Relationships","Application Component","Data Object",0,
+"Composition Relationships","Data Object","Data Object",0,
+"Realization Relationships","Data Object","Business Object",0,
+"Realization Relationships","Business Process","Business Service",0,
+"Realization Relationships","Business Service","Business Capability",0,
+"Serving Relationships","Business Service","Business Actor",0,
+"Association Relationships","Business Capability","Strategic Principle",40,
+"Influence Relationships","Strategic Principle","Outcome",415,
+"Influence Relationships","Outcome","Goal",89,
+"Association Relationships","Outcome","Driver",75,
+"Association Relationships","Outcome","Assessment",2,
+"Association Relationships","Outcome","Value",0,
+"Association Relationships","Value","Business Role",0,
+
+,
+Alternative Relationships:
+,
+"Association Relationships","Business Role","Outcome",117,
+
+
+1356

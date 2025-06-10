@@ -1,0 +1,224 @@
+class Node{
+    constructor(name){
+        this.name = name;
+        this.X = -1;
+        this.Y = 0;
+    }
+}
+
+function getApplications() {
+    var applications = [];
+    application_components = $("application-component");
+    application_components.forEach(function(app) {
+        var node = new Node(app.name);
+        node.Y = 0;
+        applications.push(node);
+    });
+    return applications;
+}
+
+function getServices(appNode, selected_relationships) {
+    var services = [];
+
+    var service_relationships = $("serving-relationship").filter(function(rel) { //trocar relacao ate ser decidido
+        return rel.target.name === appNode.name;
+    });
+
+    service_relationships.forEach(function(rel) {
+        if (rel.source.type === "application-service") {
+            selected_relationships.push(rel);
+            services.push(new Node(rel.source.name));
+        }
+    });
+    return services;
+}
+
+function getServiceInterfaces(services, selected_relationships) {
+    var service_interfaces = new Map();
+
+    service_names = services.map(function(serv) {
+        return serv.name;
+    });
+
+    services.forEach(function(serv) {
+        service_interfaces.set(serv.name, []);
+    });
+
+    var interface_relationships = $("assignment-relationship").filter(function(rel) {
+        return (rel.target.type === "application-service") && (service_names.includes(rel.target.name));
+    });
+
+    interface_relationships.forEach(function(rel) {
+        if (service_interfaces.has(rel.target.name)) {
+            selected_relationships.push(rel);
+            var interface_list = service_interfaces.get(rel.target.name);
+            interface_list.push(new Node(rel.source.name));
+            service_interfaces.set(rel.target.name, interface_list);
+        }
+    });
+
+    return service_interfaces;
+}
+
+function getApplicationInterfaces(service_interfaces, selected_relationships) {
+    var application_interfaces = new Map();
+
+    var interface_list = Array.from(service_interfaces.values()).flat();
+    interface_list = interface_list.map(function(inter) {
+        return inter.name;
+    });
+
+    var interface_relations = $("composition-relationship").filter(function(rel) {
+        
+        return (rel.target.type === "application-interface") && (interface_list.includes(rel.target.name)) && (rel.source.type === "application-component");
+    });
+
+    interface_relations.forEach(function(rel) {
+        selected_relationships.push(rel);
+        if (application_interfaces.has(rel.source.name)) {
+            var interface_list = application_interfaces.get(rel.source.name);
+            interface_list.push(new Node(rel.target.name));
+            application_interfaces.set(rel.source.name, interface_list);
+        } else {
+            application_interfaces.set(rel.source.name, [new Node(rel.target.name)]);
+        }
+    });
+
+    return application_interfaces;
+}
+
+function getAppList(application_interfaces) {
+    var app_list = [];
+    let apps = Array.from(application_interfaces.keys());
+    apps.forEach(function(app) {
+        app_list.push(new Node(app));
+    });
+    return app_list;
+}
+
+function getServiceList(service_interfaces) {
+    var service_list = [];
+    let services = Array.from(service_interfaces.keys());
+    services.forEach(function(service) {
+        service_list.push(new Node(service));
+    });
+    return service_list;
+}
+
+function calculatePosition(application_interfaces, app_list, service_interfaces, service_list, application) {
+    var X = 0;
+    app_list.forEach(function(app) {
+        application_interfaces.get(app.name).forEach(function(interface) {
+            interface.X = X;
+            interface.Y = 1;
+            service_list.forEach(function(service) {
+                service_interfaces.get(service.name).forEach(function(inter) {
+                    if (inter.name === interface.name) {
+                        inter.X = X;
+                        inter.Y = 2;
+                    }
+                });
+            });
+            X++;
+        });
+    });
+
+    app_list.forEach(function(app) {
+        var interfaces = application_interfaces.get(app.name);
+        var leftX = interfaces[0].X;
+        var rightX = interfaces[interfaces.length - 1].X;
+        app.X = (leftX + rightX) / 2;
+        app.Y = 3;
+    });
+
+    service_list.forEach(function(service) {
+        var interfaces = service_interfaces.get(service.name);
+        var leftX = interfaces[0].X;
+        var rightX = interfaces[interfaces.length - 1].X;
+        service.X = (leftX + rightX) / 2;
+        service.Y = 1;
+    });
+
+    var serviceX = service_list.map(function(serv) {
+        return serv.X;
+    });
+
+    var lowestServiceX = Math.min(...serviceX);
+    var highestServiceX = Math.max(...serviceX);
+
+    application.X = (lowestServiceX + highestServiceX) / 2;
+    application.Y = 0;
+}
+
+function drawDiagram(application, app_list, service_list, application_interfaces, service_interfaces, selected_relationships, view, xDistance, yDistance) {
+    var relation;
+
+    app_object = $("application-component").filter(function(el) {return el.name === application.name})[0];
+
+    var app_element = view.add(app_object, application.X*xDistance, application.Y*yDistance, -1, -1);
+
+    var int_name_element = new Map();
+
+    service_list.forEach(function(service) {
+        var service_object = $("application-service").filter(function(el) {return el.name === service.name})[0];
+        var service_element = view.add(service_object, service.X*xDistance, service.Y*yDistance, -1, -1);
+        relation = selected_relationships.filter(function(rel) {
+            return (rel.source.name === service.name) && (rel.target.name === application.name);
+        })[0];
+        view.add(relation, service_element, app_element);
+
+        service_interfaces.get(service.name).forEach(function(interface) {
+            var interface_object = $("application-interface").filter(function(el) {return el.name === interface.name})[0];
+            var interface_element = view.add(interface_object, interface.X*xDistance, interface.Y*yDistance, -1, -1);
+            relation = selected_relationships.filter(function(rel) {
+                return (rel.source.name === interface.name) && (rel.target.name === service.name);
+            })[0];
+            view.add(relation, interface_element, service_element);
+            int_name_element.set(interface.name, interface_element);
+        });
+    });
+
+    app_list.forEach(function(app) {
+        var interfaces = application_interfaces.get(app.name);
+        var app_object = $("application-component").filter(function(el) {return el.name === app.name})[0];
+        var app_element = view.add(app_object, app.X*xDistance, app.Y*yDistance, -1, -1);
+        interfaces.forEach(function(interface) {
+            var interface_element = int_name_element.get(interface.name);
+            relation = selected_relationships.filter(function(rel) {
+                return (rel.source.name === app.name) && (rel.target.name === interface.name);
+            })[0];
+            view.add(relation, app_element, interface_element);
+        });
+    });
+}
+
+function drawViewPerApplication(applications, folderName) {
+    selected_relationships = [];
+    var xDistance = 150;
+    var yDistance = 120;
+
+    var VFolder = $("folder.Views").first(); // Find folder called "Views" 
+    var folder = VFolder.createFolder(folderName); // Create a sub-folder
+
+    applications.forEach(function(app) {
+        var services = getServices(app, selected_relationships);
+        if (services.length != 0) {
+        
+            var service_interfaces = getServiceInterfaces(services, selected_relationships);
+            var application_interfaces = getApplicationInterfaces(service_interfaces, selected_relationships);
+            var app_list = getAppList(application_interfaces);
+            var service_list = getServiceList(service_interfaces);
+            calculatePosition(application_interfaces, app_list, service_interfaces, service_list, app);
+            var view = model.createArchimateView(app.name, folder);
+            drawDiagram(app, app_list, service_list, application_interfaces, service_interfaces, selected_relationships, view, xDistance, yDistance);
+            selected_relationships = [];
+        }
+    });
+}
+
+function drawApplicationCommunicationDiagram() {
+    var applications = getApplications();
+    drawViewPerApplication(applications, "Application Communication Diagrams");
+}
+
+drawApplicationCommunicationDiagram();

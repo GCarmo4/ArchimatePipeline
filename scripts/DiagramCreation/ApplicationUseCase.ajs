@@ -1,0 +1,85 @@
+class Node {
+    constructor(name) {
+        this.name = name;
+        this.X = -1;
+        this.Y = 0;
+    }
+}
+
+function getApps() {
+    var apps = [];
+    app_components = $("application-component");
+    app_components.forEach(function(obj) {
+        var node = new Node(obj.name);
+        node.Y = 2;
+        apps.push(node);
+    });
+    return apps;
+}
+
+function getActors(app, selected_relationships) {
+
+    var actors = [];
+    var app_relationships = $("association-relationship").filter(function(rel) {
+        return rel.target.name === app.name && rel.source.type === "business-actor";
+    });
+
+    app_relationships.forEach(function(rel) {
+        selected_relationships.push(rel);
+        actors.push(new Node(rel.source.name));
+    });
+
+    return actors;
+}
+
+function calculateX(app, actors) {
+    var X = 0;
+    actors.forEach(function(actors) {
+        actors.X = X;
+        actors.Y = 1;
+        X++;
+    });
+
+    app.X = (actors[actors.length - 1].X + actors[0].X) / 2;
+    app.Y = 0;
+}
+
+function drawDiagram(app, actors, selected_relationships, xDistance, yDistance, view) {
+
+    var app_object = $("application-component").filter(function(el) {return el.name === app.name})[0];
+    var app_element = view.add(app_object, app.X*xDistance, app.Y*yDistance, -1, -1);
+
+    actors.forEach(function(actor) {
+        var actor_object = $("business-actor").filter(function(el) {return el.name === actor.name})[0];
+        var actor_element = view.add(actor_object, actor.X*xDistance, actor.Y*yDistance, -1, -1);
+        relation = selected_relationships.filter(function(rel) {
+            return (rel.target.name === app.name) && (rel.source.name === actor.name);
+        })[0];
+        view.add(relation, actor_element, app_element);
+    });
+}
+
+function drawViewPerApp(apps, folderName) {
+    var xDistance = 150;
+    var yDistance = 120;
+    var selected_relationships = [];
+
+    var VFolder = $("folder.Views").first(); // Find folder called "Views" 
+    var folder = VFolder.createFolder(folderName); // Create a sub-folder
+
+    apps.forEach(function(app) {
+        var actors = getActors(app, selected_relationships);
+        if (actors.length != 0) {
+            calculateX(app, actors);
+            var view = model.createArchimateView(app.name, folder);
+            drawDiagram(app, actors, selected_relationships, xDistance, yDistance, view);
+        }
+    });
+}
+
+function drawApplicationUseCaseDiagram() {
+    var apps = getApps();
+    drawViewPerApp(apps, "Application Use-Case Diagrams");
+}
+
+drawApplicationUseCaseDiagram()

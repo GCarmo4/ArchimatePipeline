@@ -90,7 +90,6 @@ function getApplications(process) {
     });
 
     application_relationships.forEach(function(rel) {
-        console.log(rel.source.type);
         if (rel.source.type === "application-component") {
             var node = new Node(rel.source.name);
             node.Y = 3;
@@ -99,8 +98,6 @@ function getApplications(process) {
     });
 
     var firstX =  process.X - (applications.length - 1) /2;
-    console.log("X =" + firstX);
-    console.log("Length =" + applications.length);
     applications.forEach(function(app) {
         app.X = firstX;
         firstX++;
@@ -137,10 +134,6 @@ function getRelations(process, applications, role_actors) {
 
     actor_relationships.forEach(function(rel) {
         relations.push(rel);
-    });
-
-    relations.forEach(function(rel) {
-        console.log(rel.source.name + " " + rel.target.name);
     });
 
     return relations;
@@ -212,7 +205,6 @@ function drawDiagram(process, applications, roles, role_actors, relationships, x
         })[0];
         view.add(relation, app_element, process_element);
     });
-    console.log(roles.length);
     roles.forEach(function(role) {
         var actors = role_actors.get(role.name);
         var role_object = $("business-role").filter(function(el) {return el.name === role.name})[0];
@@ -243,22 +235,33 @@ function drawViewPerProcess(processes, folderName) {
     var VFolder = $("folder.Views").first(); // Find folder called "Views" 
     var folder = VFolder.createFolder(folderName); // Create a sub-folder
 
+    var count = 0;
+
     processes.forEach(function(process) {
         var roles = getRoles(process);
         if (roles.length != 0) {
-        
             var role_actors = getActors(roles);
-            calculateRoleX(roles, role_actors);
-            calculateProcessX(process, role_actors);
-            var applications = getApplications(process);
-            var relationships = getRelations(process, applications, role_actors);
-            var lowestX = getLowestX(process, applications, roles, role_actors);
-            if(lowestX < 0){
-                shiftX(process, applications, roles, role_actors, -lowestX);
+            roles.forEach(function(role) {
+                if (role_actors.get(role.name).length != 0) {
+                    count++;
+                }
+            });
+            console.log("process: " + process.name);
+            if (count == roles.length) {
+                console.log("process: " + process.name + " has roles and actors");
+                calculateRoleX(roles, role_actors);
+                calculateProcessX(process, role_actors);
+                var applications = getApplications(process);
+                var relationships = getRelations(process, applications, role_actors);
+                var lowestX = getLowestX(process, applications, roles, role_actors);
+                if(lowestX < 0){
+                    shiftX(process, applications, roles, role_actors, -lowestX);
+                }
+                var view = model.createArchimateView(process.name, folder);
+                drawDiagram(process, applications, roles, role_actors, relationships, xDistance, yDistance, view);
             }
-            var view = model.createArchimateView(process.name, folder);
-            drawDiagram(process, applications, roles, role_actors, relationships, xDistance, yDistance, view);
         }
+        count = 0;
     });
 }
 

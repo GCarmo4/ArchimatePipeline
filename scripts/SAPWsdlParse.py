@@ -67,40 +67,36 @@ if __name__ == "__main__":
     relations = readCurrentRelations()
     directory_path = "../DataSources/interfaces"  # Replace with your directory path
 
-    files = list_files_in_directory(directory_path)
-    if files:
-        print("Files in directory:")
-        for file in files:
-            print(file)
-    else:
-        print("No files found in the directory or unable to access.")
+    files = os.listdir(directory_path)
+    files = [f for f in files if f[-3:] == "xml"]
 
-    # Extract service name from the given XML file
-    xml_file_path = "../DataSources/interfaces/BN__ZISTWS_DADOS_PICAGEM.xml"  # Replace with your XML file path
-    service_name = get_service_name(xml_file_path)
-    if service_name:
-        print(f"Service name: {service_name}")
+    for file in files:
 
-    if "SAP" not in nodes:
-        print("SAP node not found in the nodes.")
-        exit(1)
-    
-    if (service_name + ":application-interface") not in nodes:
-        node_interface = Node(service_name, "application-interface")
-        nodes[service_name + ":application-interface"] = node_interface.to_dict()
+        # Extract service name from the given XML file
+        service_name = get_service_name("../DataSources/interfaces/" + file)
 
-    if (service_name + ":application-service") not in nodes:
-        node_service = Node(service_name, "application-service")
-        nodes[service_name + ":application-service"] = node_service.to_dict()
+        if service_name is not None:
 
-    relation_dict_interface = {'parent': "SAP", 'child': service_name, 'relation': 'composition-relationship'}
-    relation_dict_service = {'parent': service_name, 'child': service_name, 'relation': 'assignment-relationship'}
+            if "SAP:application-component" not in nodes:
+                print("SAP node not found in the nodes.")
+                exit(1)
+            
+            if (service_name + ":application-interface") not in nodes:
+                node_interface = Node(service_name, "application-interface")
+                nodes[service_name + ":application-interface"] = node_interface.to_dict()
 
-    if relation_dict_interface not in relations:
-        relations.append(relation_dict_interface)
-    
-    if relation_dict_service not in relations:
-        relations.append(relation_dict_service)
+            if (service_name + ":application-service") not in nodes:
+                node_service = Node(service_name, "application-service")
+                nodes[service_name + ":application-service"] = node_service.to_dict()
+
+            relation_dict_interface = {'parent': "SAP", 'child': service_name, 'relation': 'composition-relationship'}
+            relation_dict_service = {'parent': service_name, 'child': service_name, 'relation': 'assignment-relationship'}
+
+            if relation_dict_interface not in relations:
+                relations.append(relation_dict_interface)
+            
+            if relation_dict_service not in relations:
+                relations.append(relation_dict_service)
 
     write_to_json(nodes, 'Jsons/nodes.json')
     write_to_json(relations, 'Jsons/relations.json')

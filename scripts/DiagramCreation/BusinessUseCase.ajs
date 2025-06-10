@@ -1,0 +1,85 @@
+class Node {
+    constructor(name) {
+        this.name = name;
+        this.X = -1;
+        this.Y = 0;
+    }
+}
+
+function getServices() {
+    var services = [];
+    service_components = $("business-service");
+    service_components.forEach(function(obj) {
+        var node = new Node(obj.name);
+        node.Y = 2;
+        services.push(node);
+    });
+    return services;
+}
+
+function getActors(service, selected_relationships) {
+
+    var actors = [];
+    var service_relationships = $("association-relationship").filter(function(rel) {
+        return rel.target.name === service.name && rel.source.type === "business-actor";
+    });
+
+    service_relationships.forEach(function(rel) {
+        selected_relationships.push(rel);
+        actors.push(new Node(rel.source.name));
+    });
+
+    return actors;
+}
+
+function calculateX(service, actors) {
+    var X = 0;
+    actors.forEach(function(actors) {
+        actors.X = X;
+        actors.Y = 1;
+        X++;
+    });
+
+    service.X = (actors[actors.length - 1].X + actors[0].X) / 2;
+    service.Y = 0;
+}
+
+function drawDiagram(service, actors, selected_relationships, xDistance, yDistance, view) {
+
+    var service_object = $("business-service").filter(function(el) {return el.name === service.name})[0];
+    var service_element = view.add(service_object, service.X*xDistance, service.Y*yDistance, -1, -1);
+
+    actors.forEach(function(actor) {
+        var actor_object = $("business-actor").filter(function(el) {return el.name === actor.name})[0];
+        var actor_element = view.add(actor_object, actor.X*xDistance, actor.Y*yDistance, -1, -1);
+        relation = selected_relationships.filter(function(rel) {
+            return (rel.target.name === service.name) && (rel.source.name === actor.name);
+        })[0];
+        view.add(relation, actor_element, service_element);
+    });
+}
+
+function drawViewPerService(services, folderName) {
+    var xDistance = 150;
+    var yDistance = 120;
+    var selected_relationships = [];
+
+    var VFolder = $("folder.Views").first(); // Find folder called "Views" 
+    var folder = VFolder.createFolder(folderName); // Create a sub-folder
+
+    services.forEach(function(service) {
+        var actors = getActors(service, selected_relationships);
+        if (actors.length != 0) {
+            calculateX(service, actors);
+            var view = model.createArchimateView(service.name, folder);
+            drawDiagram(service, actors, selected_relationships, xDistance, yDistance, view);
+        }
+    });
+}
+
+function drawBusinessUseCaseDiagram() {
+    var services = getServices();
+    drawViewPerService(services, "Business Use-Case Diagrams");
+}
+
+drawBusinessUseCaseDiagram();

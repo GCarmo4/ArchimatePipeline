@@ -1,0 +1,368 @@
+function writeToFile(filePath, title, content) {
+    const fileWriter = new java.io.FileWriter(filePath);
+    fileWriter.write(title + "\n");
+    content.forEach(element => {
+        element.forEach(element2 => {
+            fileWriter.write(element2 + ",");
+        });
+        fileWriter.write("\n");
+    });
+    fileWriter.close();
+}
+
+function readFile(filePath) {
+    const file = new java.io.File(filePath);
+    const reader = new java.io.BufferedReader(new java.io.FileReader(file));
+    let line, content = "";
+    
+    while ((line = reader.readLine()) !== null) {
+        content += line + "\n";
+    }
+    reader.close();
+    return content;
+}
+
+function extractNamesFromFile(fileContent) {
+    const lines = fileContent.split("\n"); // Split the file content into lines
+    const names = [];
+
+    // Iterate over each line
+    lines.forEach(line => {
+        // Trim whitespace and skip empty lines
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+            names.push(trimmedLine); // Add the line to the list of names
+        }
+    });
+
+    return names;
+}
+
+function createElementCounter() {
+    var list = [];
+
+    organization_units = extractNamesFromFile(readFile("C:/Users/GCarmo/Documents/Archi/DataSources/units.tsv"));
+
+    var row = [];
+    row.push("\"Business Actors (organization units)\"");
+    row.push($("business-actor").filter(actor => {
+        return organization_units.includes(actor.name);
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Business Actors (employees)\"");
+    row.push($("business-actor").filter(actor => {
+        return !organization_units.includes(actor.name);
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Business Roles\"");
+    row.push($("business-role").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Business Processes\"");
+    row.push($("business-process").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Business Objects\"");
+    row.push($("business-object").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Application Components\"");
+    row.push($("application-component").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Application Services\"");
+    row.push($("application-service").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Application Interfaces\"");
+    row.push($("application-interface").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Data Objects\"");
+    row.push($("data-object").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Business Service\"");
+    row.push($("business-service").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Business Cpability\"");
+    row.push($("capability").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Strategic Principle\"");
+    row.push($("principle").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Outcome\"");
+    row.push($("outcome").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Driver\"");
+    row.push($("driver").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Assessment\"");
+    row.push($("assessment").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Goal\"");
+    row.push($("goal").length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Value\"");
+    row.push($("value").length);
+    list.push(row);
+
+
+    writeToFile("C:/Users/GCarmo/Documents/Archi/scripts/Element_Counter.csv", "Elements, Count", list);
+}
+
+function createRelationCounter() {
+    var list = [];
+
+    var row = [];
+    row.push("\"Composition Relationships\"");
+    row.push("\"Business Actor\"");
+    row.push("\"Business Actor\"");
+    row.push($("composition-relationship").filter(rel => {
+        return rel.source.type === "business-actor" && rel.target.type === "business-actor";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Assignment Relationships\"");
+    row.push("\"Business Actor\"");
+    row.push("\"Business Role\"");
+    row.push($("assignment-relationship").filter(rel => {
+        return rel.source.type === "business-actor" && rel.target.type === "business-role";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Assignment Relationships\"");
+    row.push("\"Business Role\"");
+    row.push("\"Business Process\"");
+    row.push($("assignment-relationship").filter(rel => {
+        return rel.source.type === "business-role" && rel.target.type === "business-process";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Composition Relationships\"");
+    row.push("\"Business Process\"");
+    row.push("\"Business Process\"");
+    row.push($("composition-relationship").filter(rel => {
+        return rel.source.type === "business-process" && rel.target.type === "business-process";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Flow Relationships\"");
+    row.push("\"Business Process\"");
+    row.push("\"Business Process\"");
+    row.push($("flow-relationship").filter(rel => {
+        return rel.source.type === "business-process" && rel.target.type === "business-process";
+    }).length);
+
+    row = [];
+    row.push("\"Access Relationships\"");
+    row.push("\"Business Process\"");
+    row.push("\"Business Object\"");
+    row.push($("access-relationship").filter(rel => {
+        return rel.source.type === "business-process" && rel.target.type === "business-object";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Composition Relationships\"");
+    row.push("\"Business Object\"");
+    row.push("\"Business Object\"");
+    row.push($("composition-relationship").filter(rel => {
+        return rel.source.type === "business-object" && rel.target.type === "business-object";
+    }).length);
+
+    row = [];
+    row.push("\"Serving Relationships\"");
+    row.push("\"Application Component\"");
+    row.push("\"Business Process\"");
+    row.push($("serving-relationship").filter(rel => {
+        return rel.source.type === "application-component" && rel.target.type === "business-process";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Composition Relationships\"");
+    row.push("\"Application Component\"");
+    row.push("\"Application Interface\"");
+    row.push($("composition-relationship").filter(rel => {
+        return rel.source.type === "application-component" && rel.target.type === "application-interface";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Assignment Relationships\"");
+    row.push("\"Application Interface\"");
+    row.push("\"Application Service\"");
+    row.push($("assignment-relationship").filter(rel => {
+        return rel.source.type === "application-interface" && rel.target.type === "application-service";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Access Relationships\"");
+    row.push("\"Application Component\"");
+    row.push("\"Data Object\"");
+    row.push($("access-relationship").filter(rel => {
+        return rel.source.type === "application-component" && rel.target.type === "data-object";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Composition Relationships\"");
+    row.push("\"Data Object\"");
+    row.push("\"Data Object\"");
+    row.push($("composition-relationship").filter(rel => {
+        return rel.source.type === "data-object" && rel.target.type === "data-object";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Realization Relationships\"");
+    row.push("\"Data Object\"");
+    row.push("\"Business Object\"");
+    row.push($("realization-relationship").filter(rel => {
+        return rel.source.type === "data-object" && rel.target.type === "business-object";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Realization Relationships\"");
+    row.push("\"Business Process\"");
+    row.push("\"Business Service\"");
+    row.push($("realization-relationship").filter(rel => {
+        return rel.source.type === "business-process" && rel.target.type === "business-service";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Realization Relationships\"");
+    row.push("\"Business Service\"");
+    row.push("\"Business Capability\"");
+    row.push($("realization-relationship").filter(rel => {
+        return rel.source.type === "business-service" && rel.target.type === "capability";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Serving Relationships\"");
+    row.push("\"Business Service\"");
+    row.push("\"Business Actor\"");
+    row.push($("serving-relationship").filter(rel => {
+        return rel.source.type === "business-service" && rel.target.type === "business-actor";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Association Relationships\"");
+    row.push("\"Business Capability\"");
+    row.push("\"Strategic Principle\"");
+    row.push($("association-relationship").filter(rel => {
+        return rel.source.type === "capability" && rel.target.type === "principle";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Influence Relationships\"");
+    row.push("\"Strategic Principle\"");
+    row.push("\"Outcome\"");
+    row.push($("influence-relationship").filter(rel => {
+        return rel.source.type === "principle" && rel.target.type === "outcome";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Influence Relationships\"");
+    row.push("\"Outcome\"");
+    row.push("\"Goal\"");
+    row.push($("influence-relationship").filter(rel => {
+        return rel.source.type === "outcome" && rel.target.type === "goal";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Association Relationships\"");
+    row.push("\"Outcome\"");
+    row.push("\"Driver\"");
+    row.push($("association-relationship").filter(rel => {
+        return rel.source.type === "outcome" && rel.target.type === "driver";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Association Relationships\"");
+    row.push("\"Outcome\"");
+    row.push("\"Assessment\"");
+    row.push($("association-relationship").filter(rel => {
+        return rel.source.type === "outcome" && rel.target.type === "assessment";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Association Relationships\"");
+    row.push("\"Outcome\"");
+    row.push("\"Value\"");
+    row.push($("association-relationship").filter(rel => {
+        return rel.source.type === "outcome" && rel.target.type === "value";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\"Association Relationships\"");
+    row.push("\"Value\"");
+    row.push("\"Business Role\"");
+    row.push($("association-relationship").filter(rel => {
+        return rel.source.type === "value" && rel.target.type === "business-role";
+    }).length);
+    list.push(row);
+
+    row = [];
+    row.push("\n");
+    list.push(row);
+
+    row = [];
+    row.push("Alternative Relationships:\n");
+    list.push(row);
+
+    row = [];
+    row.push("\"Association Relationships\"");
+    row.push("\"Business Role\"");
+    row.push("\"Outcome\"");
+    row.push($("association-relationship").filter(rel => {
+        return rel.source.type === "business-role" && rel.target.type === "outcome";
+    }).length);
+    list.push(row);
+
+    writeToFile("C:/Users/GCarmo/Documents/Archi/scripts/Relation_Counter.csv", "Relationship Type, Source, Target, Count", list);
+}
+
+createElementCounter();
+createRelationCounter();

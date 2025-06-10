@@ -1,0 +1,283 @@
+function writeToFile(filePath, content) {
+    const fileWriter = new java.io.FileWriter(filePath);
+    content.forEach(element => {
+        element.forEach(element2 => {
+            fileWriter.write(element2 + ",");
+        });
+        fileWriter.write("\n");
+    });
+    fileWriter.close();
+}
+
+function readFile(filePath) {
+    const file = new java.io.File(filePath);
+    const reader = new java.io.BufferedReader(new java.io.FileReader(file));
+    let line, content = "";
+    
+    while ((line = reader.readLine()) !== null) {
+        content += line + "\n";
+    }
+    reader.close();
+    return content;
+}
+
+function extractNamesFromFile(fileContent) {
+    const lines = fileContent.split("\n"); // Split the file content into lines
+    const names = [];
+
+    // Iterate over each line
+    lines.forEach(line => {
+        // Trim whitespace and skip empty lines
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+            names.push(trimmedLine); // Add the line to the list of names
+        }
+    });
+
+    return names;
+}
+
+function addCounts(list) {
+    var rowCounts = ["Total"];
+    var count = 0;
+    for (var i = 0; i < list[0].length; i++) {
+        rowCounts.push(0);
+    }
+    list.forEach(row => {
+        count = 0;
+        for (var i = 0; i < row.length; i++) {
+            if (row[i] == "X") {
+                rowCounts[i]++;
+                count++;
+            }
+        }
+        row.push(count);
+    });
+    list[0][list[0].length-1] = "Total";
+    rowCounts[rowCounts.length-1] = "";
+    list.push(rowCounts);
+    return list;
+}
+
+function createStakeholderMapMatrix() {
+    var list = [];
+
+    var organization_units = extractNamesFromFile(readFile("C:/Users/GCarmo/Documents/Archi/DataSources/units.tsv"));
+    
+    var stakeholders = $("stakeholder").map(stakeholder => {
+        return stakeholder.name;
+    });
+
+    var actors = $("business-actor").filter(actor => {
+        return organization_units.includes(actor.name);
+    });
+    actors = actors.map(actor => {
+        return actor.name;
+    });
+
+    var rels = $("assignment-relationship").filter(rel => {
+        return rel.source.type === "business-actor" && rel.target.type === "stakeholder";
+    });
+
+    var row = ["Organization Unit/Stakeholder"];
+    
+    stakeholders.forEach(stakeholder => {
+        row.push("\"" + stakeholder + "\"");
+    });
+
+    list.push(row);
+
+    var actors_dict = {};
+
+    actors.forEach(actor => {
+        if (actors_dict[actor] === undefined) {
+            actors_dict[actor] = [];
+            for (var i = 0; i < stakeholders.length; i++) {
+                actors_dict[actor].push("");
+            }
+        }
+        var rels_filtered = rels.filter(rel => {
+            return rel.source.name === actor;
+        });
+        rels_filtered.forEach(rel => {
+            actors_dict[actor][stakeholders.indexOf(rel.target.name)] = "X";
+        });
+    });
+
+    for (var actor in actors_dict) {
+        row = ["\"" + actor + "\""];
+        actors_dict[actor].forEach(stakeholder => {
+            row.push(stakeholder);
+        });
+        list.push(row);   
+    }
+
+    list = addCounts(list);
+
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Matrices/Stakeholder_Map_Matrix.csv", list);
+}
+
+function createActorRoleMatrix() {
+    var list = [];
+    
+    var organization_units = extractNamesFromFile(readFile("C:/Users/GCarmo/Documents/Archi/DataSources/units.tsv"));
+
+    var roles = $("business-role").map(role => {
+        return role.name;
+    });
+    var actors = $("business-actor").filter(actor => {
+        return !organization_units.includes(actor.name);
+    });
+    actors = actors.map(actor => {
+        return actor.name;
+    });
+
+    var rels = $("assignment-relationship").filter(rel => {
+        return rel.source.type === "business-actor" && rel.target.type === "business-role" && !organization_units.includes(rel.source.name);
+    });
+
+    var row = ["Actor/Role"];
+    roles.forEach(role => {
+        row.push("\"" + role + "\"");
+    });
+
+    list.push(row);
+
+    var actors_dict = {};
+
+    actors.forEach(actor => {
+        if (actors_dict[actor] === undefined) {
+            actors_dict[actor] = [];
+            for (var i = 0; i < roles.length; i++) {
+                actors_dict[actor].push("");
+            }
+        }
+        var rels_filtered = rels.filter(rel => {
+            return rel.source.name === actor;
+        });
+        rels_filtered.forEach(rel => {
+            actors_dict[actor][roles.indexOf(rel.target.name)] = "X";
+        });
+    });
+
+    for (var actor in actors_dict) {
+        row = [actor];
+        actors_dict[actor].forEach(role => {
+            row.push(role);
+        });
+        list.push(row);   
+    }
+
+    list = addCounts(list);
+    
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Matrices/Actor_Role_Matrix.csv", list);
+}
+
+function createApplicationDataMatrix() {
+    var list = [];
+    
+    var applications = $("application-component").map(app => {
+        return app.name;
+    });
+
+    var data = $("data-object").map(data => {
+        return data.name;
+    });
+
+    var rels = $("access-relationship").filter(rel => {
+        return rel.source.type === "application-component" && rel.target.type === "data-object";
+    });
+
+    var row = ["Application/Data"];
+    data.forEach(data => {
+        row.push("\"" + data + "\"");
+    });
+
+    list.push(row);
+
+    var applications_dict = {};
+
+    applications.forEach(app => {
+        if (applications_dict[app] === undefined) {
+            applications_dict[app] = [];
+            for (var i = 0; i < data.length; i++) {
+                applications_dict[app].push("");
+            }
+        }
+        var rels_filtered = rels.filter(rel => {
+            return rel.source.name === app;
+        });
+        rels_filtered.forEach(rel => {
+            applications_dict[app][data.indexOf(rel.target.name)] = "X";
+        });
+    });
+
+    for (var app in applications_dict) {
+        row = [app];
+        applications_dict[app].forEach(data => {
+            row.push(data);
+        });
+        list.push(row);   
+    }
+
+    addCounts(list);
+
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Matrices/Application_Data_Matrix.csv", list);
+}
+
+function createApplicationFunctionMatrix() {
+    var list = [];
+    
+    var applications = $("application-component").map(app => {
+        return app.name;
+    });
+
+    var procs = $("business-process").map(process => {
+        return process.name;
+    });
+
+    var rels = $("serving-relationship").filter(rel => {
+        return rel.source.type === "application-component" && rel.target.type === "business-process";
+    });
+
+    var row = ["Process/Application"];
+    applications.forEach(app => {
+        row.push("\"" + app + "\"");
+    });
+
+    list.push(row);
+
+    var processes_dict = {};
+
+    procs.forEach(proc => {
+        if (processes_dict[proc] === undefined) {
+            processes_dict[proc] = [];
+            for (var i = 0; i < applications.length; i++) {
+                processes_dict[proc].push("");
+            }
+        }
+        var rels_filtered = rels.filter(rel => {
+            return rel.target.name === proc;
+        });
+        rels_filtered.forEach(rel => {
+            processes_dict[proc][applications.indexOf(rel.source.name)] = "X";
+        });
+    });
+
+    for (var proc in processes_dict) {
+        row = [proc];
+        processes_dict[proc].forEach(app => {
+            row.push(app);
+        });
+        list.push(row);   
+    }
+
+    addCounts(list);
+
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Matrices/Application_Function_Matrix.csv", list);
+}
+
+createStakeholderMapMatrix();
+createActorRoleMatrix();
+createApplicationDataMatrix();
+createApplicationFunctionMatrix();

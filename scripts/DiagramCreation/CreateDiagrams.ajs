@@ -1,0 +1,60 @@
+load("ApplicationCommunication.js")
+//load("ApplicationUseCase.ajs")
+//load("BusinessCapabilityMap.ajs")
+//load("BusinessFootprint.ajs")
+//load("BusinessServiceInformation.ajs")
+//load("BusinessUseCase.ajs")
+//load("ConseptualData.ajs")
+//load("DataSecurity.ajs")
+//load("FunctionalDecomposition.ajs")
+//laod("LogicalData.ajs")
+//load("OrganizationalDecomposition.ajs")
+//load("ProcessFlow.ajs")
+
+console.log("Drawing Application Communication Diagrams...");
+drawApplicationCommunicationDiagram();
+console.log("Application Communication Diagrams drawn successfully!");
+
+console.log("Drawing Application Use-Case Diagrams...");
+drawApplicationUseCaseDiagram();
+console.log("Application Use-Case Diagrams drawn successfully!");
+
+console.log("Drawing Business Capability Maps...");
+drawBusinessCapabilityMap();
+console.log("Business Capability Maps drawn successfully!");
+
+console.log("Drawing Business Footprint Diagrams...");
+drawBusinessFootprintDiagram();
+console.log("Business Footprint Diagrams drawn successfully!");
+
+console.log("Drawing Business Service/Information Diagrams...");
+drawBusinessServiceInformationDiagram();
+console.log("Business Service/Information Diagrams drawn successfully!");
+
+console.log("Drawing Business Use-Case Diagrams...");
+drawBusinessUseCaseDiagram();
+console.log("Business Use-Case Diagrams drawn successfully!");
+
+console.log("Drawing Conceptual Data Diagrams...");
+drawConceptualDataDiagram();
+console.log("Conceptual Data Diagrams drawn successfully!");
+
+console.log("Drawing Data Security Diagrams...");
+drawDataSecurityDiagram();
+console.log("Data Security Diagrams drawn successfully!");
+
+console.log("Drawing Functional Decomposition Diagrams...");
+drawFunctionalDecompositionDiagram();
+console.log("Functional Decomposition Diagrams drawn successfully!");
+
+console.log("Drawing Logical Data Diagrams...");
+drawLogicalDataDiagram();
+console.log("Logical Data Diagrams drawn successfully!");
+
+console.log("Drawing Organizational Decomposition Diagram...");
+drawOrganizationalDecompositionDiagram();
+console.log("Organizational Decomposition Diagram drawn successfully!");
+
+console.log("Drawing Process Flow Diagrams...");
+drawProcessFlowDiagram();
+console.log("Process Flow Diagrams drawn successfully!");

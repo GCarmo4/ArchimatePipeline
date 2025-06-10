@@ -1,0 +1,151 @@
+function writeToFile(filePath, title, content) {
+    const fileWriter = new java.io.FileWriter(filePath);
+    fileWriter.write(title + "\n");
+    content.forEach(element => {
+        element.forEach(element2 => {
+            fileWriter.write(element2 + ",");
+        });
+        fileWriter.write("\n");
+    });
+    fileWriter.close();
+}
+
+function readFile(filePath) {
+    const file = new java.io.File(filePath);
+    const reader = new java.io.BufferedReader(new java.io.FileReader(file));
+    let line, content = "";
+    
+    while ((line = reader.readLine()) !== null) {
+        content += line + "\n";
+    }
+    reader.close();
+    return content;
+}
+
+function extractNamesFromFile(fileContent) {
+    const lines = fileContent.split("\n"); // Split the file content into lines
+    const names = [];
+
+    // Iterate over each line
+    lines.forEach(line => {
+        // Trim whitespace and skip empty lines
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+            names.push(trimmedLine); // Add the line to the list of names
+        }
+    });
+
+    return names;
+}
+
+function createPrinciplesCatalog() {
+    var list = [];
+    
+    var principles = $("principle").map(prin => {
+        return prin.name;
+    });
+    principles.forEach(element => {
+        list.push(["\"" + element + "\""]);
+    });
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Catalogs/Princples_Catalog.csv", "Strategic Principles", list);
+}
+
+function createOrganizationActorCatalog() {
+    var list = [];
+
+    var organization_units = extractNamesFromFile(readFile("C:/Users/GCarmo/Documents/Archi/DataSources/units.tsv"));
+
+    organization_units.forEach(element => {
+        var relations = $("composition-relationship").filter(rel => {
+            return rel.source.name === element && rel.target.type === "business-actor" && !organization_units.includes(rel.target.name);
+        });
+        relations.forEach(rel => {
+            var element2 = $("business-actor").filter(actor => {
+                return actor.name === rel.target.name;
+            })[0];
+            list.push(["\"" + element2.name + "\"", "\"" + element2.prop("istID") + "\"", "\"" + element + "\"" , "\"" + element2.prop("Centro cst") + "\"" , "\"" + element2.prop("Centro de custo") + "\"" , "\"" + element2.prop("Cargo") + "\"" , "\"" + element2.prop("ÁrRH") + "\"" , "\"" + element2.prop("Área de recursos humanos") + "\"" , "\"" + element2.prop("Subárea") + "\"" , "\"" + element2.prop("Subárea de recursos humanos") + "\"" , "\"" + element2.prop("Grupo de empregados") + "\"" , "\"" + element2.prop("Subgrupo de empregados") + "\"" , "\"" + element2.prop("Área de processamento da folha") + "\""]);
+        });
+    });
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Catalogs/Organization_Actor_Catalog.csv", "Actors, istID, Organization Unit, Centro cst, Centro de Custo, Cargo, ÁrRH, Área de recursos humanos, Subárea, Subárea de recursos humanos, Grupo de empregados, Subgrupo de empregados, área de processamento da folha", list);
+}
+
+function createRoleCatalog() {
+    var list = [];
+    
+    var roles = $("business-role").map(role => {
+        return role.name;
+    });
+    roles.forEach(element => {
+        list.push(["\"" + element + "\""]);
+    });
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Catalogs/Role_Catalog.csv", "Business Roles", list);
+}
+
+function createBusinessServiceFunctionCatalog() {
+    var list = [];
+
+    var services = $("business-service").map(service => {
+        return service.name;
+    });
+    services.forEach(element => {
+        var relations = $("realization-relationship").filter(rel => {
+            return rel.target.name === element && rel.target.type === "business-service" && rel.source.type === "business-process";
+        });
+        relations.forEach(element2 => {
+            list.push(["\"" + element + "\"", "\"" + element2.source.name + "\""]);
+        });
+    });
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Catalogs/Business_Service_Function_Catalog.csv", "Business Services, Business Processes", list);
+}
+
+function createApplicationPortfolioCatalog() {
+    var list = [];
+
+    var apps = $("application-component").map(app => {
+        return app.name;
+    });
+    apps.forEach(element => {
+        list.push([element]);
+    });
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Catalogs/Application_Portfolio_Catalog.csv", "Applications", list);
+}
+
+function createInterfaceCatalog() {
+    var list = [];
+
+    var services = $("application-service").map(service => {
+        return service.name;
+    });
+    services.forEach(element => {
+        var relations = $("assignment-relationship").filter(rel => {
+            return rel.target.name === element && rel.target.type === "application-service" && rel.source.type === "application-interface";
+        });
+        relations.forEach(element2 => {
+            list.push(["\"" + element + "\"", "\"" + element2.source.name + "\""]);
+        });
+    });
+
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Catalogs/Interface_Catalog.csv", "Application Services, Application Interfaces", list);
+}
+
+function createBusinessObjectCatalog() {
+    var list = [];
+
+    var objects = $("business-object").map(obj => {
+        return obj.name;
+    });
+    objects.forEach(element => {
+        list.push([element]);
+    });
+    writeToFile("C:/Users/GCarmo/Documents/Archi/Catalogs/Business_Object_Catalog.csv", "Business Objects", list);
+}
+
+console.log("Creating catalogs...");
+createPrinciplesCatalog();
+createOrganizationActorCatalog();
+createRoleCatalog();
+createBusinessServiceFunctionCatalog();
+createApplicationPortfolioCatalog();
+createInterfaceCatalog();
+createBusinessObjectCatalog();
+console.log("Catalogs created successfully!");

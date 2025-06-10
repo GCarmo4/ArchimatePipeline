@@ -63,6 +63,9 @@ def main():
     relations_list = []
     traverse_and_collect(tree_root, relations=relations_list, nodes=nodes)
 
+    for node in nodes:
+        nodes[node]["properties"] += [{"name" : "type", "value" : "organizaton unit"}]
+
     # Write tree to a JSON file
     write_to_json(nodes, 'Jsons/nodes.json')
 

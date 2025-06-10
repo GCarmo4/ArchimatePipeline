@@ -1,33 +1,5 @@
 load("TreePlacementAlgorithm.js")
 
-function readFile(filePath) {
-    const file = new java.io.File(filePath);
-    const reader = new java.io.BufferedReader(new java.io.FileReader(file));
-    let line, content = "";
-    
-    while ((line = reader.readLine()) !== null) {
-        content += line + "\n";
-    }
-    reader.close();
-    return content;
-}
-
-function extractNamesFromFile(fileContent) {
-    const lines = fileContent.split("\n"); // Split the file content into lines
-    const names = [];
-
-    // Iterate over each line
-    lines.forEach(line => {
-        // Trim whitespace and skip empty lines
-        const trimmedLine = line.trim();
-        if (trimmedLine) {
-            names.push(trimmedLine); // Add the line to the list of names
-        }
-    });
-
-    return names;
-}
-
 class Node {
     constructor(name, parent) {
         this.name = name;
@@ -102,26 +74,24 @@ function calculateDepth(node) {
     });
 }
 
-function getHierarchy(selectedRelationships, organizationUnits) {
+function getHierarchy(selectedRelationships) {
 
     var count = 0;
 
     var relationships = $("composition-relationship");
-    var elements = $("element");
+    var elements = $("business-object");
 
     var rootNode = new Node("root", null);
     var nodes = [rootNode];
 
     //Iterate through all elements to find all elements without parents
     elements.forEach(element => {
-        if (organizationUnits.includes(element.name)) {
-            var relsCoontainingEl = relationships.filter(function(rel){return rel.target.name === element.name})
-            if (relsCoontainingEl.length === 0) {
-                count++;
-                var node = new Node(element.name, null);
-                nodes.push(node);
-                rootNode.addChild(node);
-            }
+        var relsCoontainingEl = relationships.filter(function(rel){return rel.target.type === "business-object" && rel.target.name === element.name})
+        if (relsCoontainingEl.length === 0) {
+            count++;
+            var node = new Node(element.name, null);
+            nodes.push(node);
+            rootNode.addChild(node);
         }
     });
 
@@ -131,7 +101,7 @@ function getHierarchy(selectedRelationships, organizationUnits) {
             const parent = rel.source;
             const child = rel.target;
 
-            if (organizationUnits.includes(parent.name) && organizationUnits.includes(child.name)) {
+            if (parent.type === "business-object" && child.type === "business-object") {
                 var parentNode = nodes.find(function(node) {return node.name === parent.name});
                 var childNode = nodes.find(function(node) {return node.name === child.name});
                 selectedRelationships.push(rel);
@@ -153,12 +123,13 @@ function getHierarchy(selectedRelationships, organizationUnits) {
             }
         }
     });
+    console.log("A " + count);
     return rootNode;
 }
 
 function drawElements(node, view, xDistance, yDistance, selectedElements) {
     if (node.name !== "root") {
-        var element = $("business-actor").filter(function(el) {return el.name === node.name})[0];
+        var element = $("business-object").filter(function(el) {return el.name === node.name})[0];
         var component = view.add(element, node.X * xDistance, node.Y * yDistance, -1, -1);
         if (!selectedElements.includes(component)) {
             selectedElements.push(component);
@@ -180,6 +151,7 @@ function drawRelations(selectedRelationships, selectedElements, view) {
 
 function drawIsolatedElements(isolatedElements, xDistance, yDistance, elementsPerRow, folder) {
     var view = model.createArchimateView("Isolated Elements", folder);
+    console.log(isolatedElements[0]);
     for (var i = 0; i < isolatedElements.length; i++) {
         view.add(getElementFromName(isolatedElements[i].name), (i % elementsPerRow) * xDistance, Math.floor(i / elementsPerRow) * yDistance, -1, -1);
     }
@@ -208,18 +180,16 @@ function getElementFromName(nodeName) {
     return $("element").filter(function(el) {return el.name === nodeName})[0];
 }
 
-function drawOrganizationalDecompositionDiagram() {
-    var organizationUnits = extractNamesFromFile(readFile("C:/Users/GCarmo/Documents/Archi/DataSources/units.tsv"));
-
+function drawConceptualDataDiagram() {
     var selectedRelationships = [];
-
-    var coll = getHierarchy(selectedRelationships, organizationUnits);
+    //var selectedElements = [];
+    var coll = getHierarchy(selectedRelationships,);
 
     calculateDepth(coll);
 
     var treeCalculator = new DrawTree();
     treeCalculator.calculateIndividualPositions(coll);
-    drawViewPerTree(coll, "Organizational Decomposition Diagrams", selectedRelationships);
+    drawViewPerTree(coll, "Conceptual Data Diagrams", selectedRelationships);
 }
 
-drawOrganizationalDecompositionDiagram();
+drawConceptualDataDiagram();

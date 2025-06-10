@@ -1,0 +1,85 @@
+class Node {
+    constructor(name) {
+        this.name = name;
+        this.X = -1;
+        this.Y = 0;
+    }
+}
+
+function getBObjects() {
+    var objects = [];
+    business_objects = $("business-object");
+    business_objects.forEach(function(obj) {
+        var node = new Node(obj.name);
+        node.Y = 2;
+        objects.push(node);
+    });
+    return objects;
+}
+
+function getDObjects(object, selected_relationships) {
+
+    var dobjects = [];
+    var object_relationships = $("realization-relationship").filter(function(rel) {
+        return rel.target.name === object.name && rel.source.type === "data-object";
+    });
+
+    object_relationships.forEach(function(rel) {
+        selected_relationships.push(rel);
+        dobjects.push(new Node(rel.source.name));
+    });
+
+    return dobjects;
+}
+
+function calculateX(object, dobjects) {
+    var X = 0;
+    dobjects.forEach(function(dobjects) {
+        dobjects.X = X;
+        dobjects.Y = 1;
+        X++;
+    });
+
+    object.X = (dobjects[dobjects.length - 1].X + dobjects[0].X) / 2;
+    object.Y = 0;
+}
+
+function drawDiagram(object, dobjects, selected_relationships, xDistance, yDistance, view) {
+
+    var object_object = $("business-object").filter(function(el) {return el.name === object.name})[0];
+    var object_element = view.add(object_object, object.X*xDistance, object.Y*yDistance, -1, -1);
+
+    dobjects.forEach(function(dobject) {
+        var dobject_object = $("data-object").filter(function(el) {return el.name === dobject.name})[0];
+        var dobject_element = view.add(dobject_object, dobject.X*xDistance, dobject.Y*yDistance, -1, -1);
+        relation = selected_relationships.filter(function(rel) {
+            return (rel.target.name === object.name) && (rel.source.name === dobject.name);
+        })[0];
+        view.add(relation, dobject_element, object_element);
+    });
+}
+
+function drawViewPerObject(objects, folderName) {
+    var xDistance = 150;
+    var yDistance = 120;
+    var selected_relationships = [];
+
+    var VFolder = $("folder.Views").first(); // Find folder called "Views" 
+    var folder = VFolder.createFolder(folderName); // Create a sub-folder
+
+    objects.forEach(function(obj) {
+        var dobjects = getDObjects(obj, selected_relationships);
+        if (dobjects.length != 0) {
+            calculateX(obj, dobjects);
+            var view = model.createArchimateView(obj.name, folder);
+            drawDiagram(obj, dobjects, selected_relationships, xDistance, yDistance, view);
+        }
+    });
+}
+
+function drawDataGeneralizationDiagram() {
+    var objects = getBObjects();
+    drawViewPerObject(objects, "Data Generalization Diagrams");
+}
+
+drawDataGeneralizationDiagram();
